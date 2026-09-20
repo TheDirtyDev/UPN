@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Profile Report - <%= targetUser.username %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print {
+            body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body class="bg-white text-gray-900 p-8 max-w-4xl mx-auto">
+    <!-- Print Button (Hidden when printing to PDF) -->
+    <div class="no-print mb-6 flex justify-between items-center">
+        <button onclick="window.print()" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition">
+            🖨️ Save as PDF / Print
+        </button>
+        <a href="/admin/user/<%= targetUser.id %>" class="text-gray-600 hover:underline">← Back to Edit Panel</a>
+    </div>
+
+    <!-- Report Header -->
+    <div class="border-b pb-6 mb-6 flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold">UPN Community Record</h1>
+            <p class="text-gray-500 text-sm">Generated on <%= new Date().toLocaleDateString() %></p>
+        </div>
+        <div class="text-right">
+            <span class="px-3 py-1 rounded-full text-sm font-semibold 
+                <%= targetUser.whitelistStatus === 'Approved' ? 'bg-green-100 text-green-800' : targetUser.whitelistStatus === 'Denied' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800' %>">
+                <%= targetUser.whitelistStatus || 'Pending Review' %>
+            </span>
+        </div>
+    </div>
+
+    <!-- User Details Grid -->
+    <div class="grid grid-cols-2 gap-6 mb-8">
+        <div class="bg-gray-50 p-4 rounded-lg border">
+            <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Discord Information</h3>
+            <p><strong>Username:</strong> <%= targetUser.username %></p>
+            <p><strong>Discord ID:</strong> <%= targetUser.id %></p>
+            <p><strong>Submitted Date:</strong> <%= targetUser.submittedDate || 'N/A' %></p>
+        </div>
+        <div class="bg-gray-50 p-4 rounded-lg border">
+            <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Assignment</h3>
+            <p><strong>Department:</strong> <%= targetUser.department || 'Unassigned' %></p>
+            <p><strong>Callsign:</strong> <%= targetUser.callsign || 'Unassigned' %></p>
+            <p><strong>Active Strikes:</strong> <%= targetUser.strikes || 0 %></p>
+        </div>
+    </div>
+
+    <!-- Roleplay Application Details -->
+    <div class="space-y-4 mb-8">
+        <h3 class="text-xl font-bold border-b pb-2">Application Details</h3>
+        <div class="grid grid-cols-2 gap-4">
+            <p><strong>IRL Name:</strong> <%= targetUser.irl_name || 'Not Provided' %></p>
+            <p><strong>IRL Age/Bday:</strong> <%= targetUser.irl_age_bday || 'Not Provided' %></p>
+            <p><strong>RP Name:</strong> <%= targetUser.rp_name || 'Not Provided' %></p>
+            <p><strong>RP Age:</strong> <%= targetUser.rp_age || 'Not Provided' %></p>
+            <p class="col-span-2"><strong>RP Address:</strong> <%= targetUser.rp_address || 'Not Provided' %></p>
+        </div>
+        <div>
+            <p class="font-semibold mb-1">Character Description:</p>
+            <p class="bg-gray-50 p-3 rounded border text-sm"><%= targetUser.rp_description || 'None provided.' %></p>
+        </div>
+        <div>
+            <p class="font-semibold mb-1">Backstory / History:</p>
+            <p class="bg-gray-50 p-3 rounded border text-sm whitespace-pre-line"><%= targetUser.rp_story || 'None provided.' %></p>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="border-t pt-4 text-center text-xs text-gray-400">
+        UPN Management & Security System • Confidential Administrative Record
+    </div>
+
+    <script>
+        // Optional: Auto-open print dialog when page loads
+        // window.onload = () => window.print();
+    </script>
+</body>
+</html>

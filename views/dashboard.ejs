@@ -1,0 +1,895 @@
+<%- include('partials/header') %>
+
+    <style>
+        /* Scoped CSS for Modernized Dashboard */
+        .dashboard-container {
+            flex: 1;
+            padding: 40px 5%;
+            background: radial-gradient(circle at top center, #0f172a 0%, #07090e 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            min-height: calc(100vh - 80px);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 35px;
+            max-width: 700px;
+        }
+
+        .dashboard-header h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: -0.02em;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #ffffff 30%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .dashboard-header p {
+            color: #94a3b8;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        /* Responsive Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 1180px;
+        }
+
+        .dash-card {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+            box-sizing: border-box;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.2);
+        }
+
+        .dash-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(59, 130, 246, 0.35);
+            box-shadow: 0 16px 24px -10px rgba(0, 0, 0, 0.5), 0 0 12px rgba(59, 130, 246, 0.1);
+        }
+
+        .dash-card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .dash-card-header i {
+            font-size: 1.1rem;
+            color: #3b82f6;
+        }
+
+        .dash-card h3 {
+            color: #f8fafc;
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin: 0;
+            letter-spacing: -0.01em;
+        }
+
+        .dash-card p {
+            color: #94a3b8;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            margin-bottom: 18px;
+        }
+
+        /* Profile Card Inner Layout */
+        .profile-card-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 10px;
+        }
+
+        .avatar {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 0 auto;
+        }
+
+        /* Modern Buttons */
+        .btn-dash {
+            padding: 10px 16px;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: white;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            text-align: center;
+            transition: all 0.2s ease;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            box-shadow: 0 3px 10px rgba(37, 99, 235, 0.25);
+        }
+
+        .btn-dash:hover {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            box-shadow: 0 5px 14px rgba(37, 99, 235, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .btn-dash.secondary {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: none;
+            color: #cbd5e1;
+        }
+
+        .btn-dash.secondary:hover {
+            background: rgba(51, 65, 85, 0.8);
+            color: #ffffff;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-dash.danger {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            box-shadow: 0 3px 10px rgba(220, 38, 38, 0.3);
+        }
+
+        .btn-dash.danger:hover {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            box-shadow: 0 5px 14px rgba(220, 38, 38, 0.5);
+        }
+
+        /* Sidebar / Quick Connect Panel */
+        .dashboard-sidebar {
+            position: fixed;
+            right: 32px;
+            top: 120px;
+            width: min(360px, calc(100vw - 32px));
+            z-index: 15;
+        }
+
+        .dashboard-sidebar-panel {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.94), rgba(9, 13, 22, 0.96));
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            backdrop-filter: blur(16px);
+        }
+
+        .sidebar-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            color: #f8fafc;
+        }
+
+        .sidebar-title h3 {
+            margin: 0;
+            font-size: 1.05rem;
+            font-weight: 700;
+        }
+
+        .sidebar-title i {
+            color: #3b82f6;
+            font-size: 1rem;
+        }
+
+        .quick-connect-btn {
+            width: 100%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: #ffffff;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.9rem;
+            letter-spacing: 0.01em;
+            box-shadow: 0 8px 18px rgba(37, 99, 235, 0.28);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.2s ease;
+            margin-bottom: 16px;
+        }
+
+        .quick-connect-btn:hover {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 10px 20px rgba(37, 99, 235, 0.32);
+        }
+
+        .social-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .social-dropdown {
+            background: rgba(15, 23, 42, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .social-dropdown summary {
+            list-style: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px;
+            color: #f8fafc;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .social-dropdown summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .social-dropdown summary::after {
+            content: '\f107';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            color: #94a3b8;
+            transition: transform 0.2s ease;
+        }
+
+        .social-dropdown[open] summary::after {
+            transform: rotate(180deg);
+        }
+
+        .social-list {
+            padding: 0 12px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .social-link {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            background: rgba(2, 6, 23, 0.45);
+            text-decoration: none;
+            color: #cbd5e1;
+            font-size: 0.76rem;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            transition: all 0.2s ease;
+        }
+
+        .social-link:hover {
+            border-color: rgba(96, 165, 250, 0.25);
+            background: rgba(30, 41, 59, 0.75);
+            color: #f8fafc;
+        }
+
+        .social-link .handle {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .social-link .external {
+            color: #60a5fa;
+            font-size: 0.7rem;
+        }
+
+        /* Modernized Overlay & Modals */
+        .custom-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(2, 6, 23, 0.8);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 16px;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+
+        .custom-modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .custom-modal-box {
+            background: linear-gradient(145deg, #0f172a 0%, #090d16 100%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            max-width: 380px;
+            width: 100%;
+            padding: 24px;
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.7);
+            transform: scale(0.95);
+            transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .custom-modal-overlay.active .custom-modal-box {
+            transform: scale(1);
+        }
+    </style>
+
+    <main class="dashboard-container">
+        <div class="dashboard-header">
+            <h1>Welcome back, <%= user.username %>
+            </h1>
+            <p>Manage your United Patrol Network profile, view community updates, and handle your whitelist status
+                seamlessly.</p>
+        </div>
+
+        <div class="dashboard-grid">
+
+            <!-- 1. Live Server Card (In Development) -->
+            <div class="dash-card" style="position: relative; overflow: hidden;">
+                <!-- Construction Tape Banner -->
+                <div
+                    style="position: absolute; top: 12px; right: -32px; background: linear-gradient(135deg, #f59e0b, #d97706); color: #0f172a; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; padding: 3px 35px; transform: rotate(45deg); box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 2; pointer-events: none;">
+                    Dev Phase
+                </div>
+
+                <div>
+                    <div class="dash-card-header">
+                        <i class="fa-solid fa-server" style="color: #f59e0b;"></i>
+                        <h3>United Patrol | FiveM</h3>
+                    </div>
+                    <p>The server is currently in development and not available for public access.</p>
+
+                    <!-- Live Server Stats Badge -->
+                    <div
+                        style="background: rgba(2, 6, 23, 0.4); border: 1px solid rgba(255, 255, 255, 0.04); border-radius: 8px; padding: 10px; margin-bottom: 14px;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="position: relative; display: flex; width: 8px; height: 8px;">
+                                    <span
+                                        style="animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite; position: absolute; display: inline-flex; height: 100%; width: 100%; border-radius: 50%; background-color: #f59e0b; opacity: 0.75;"></span>
+                                    <span
+                                        style="position: relative; display: inline-flex; border-radius: 50%; height: 8px; width: 8px; background-color: #f59e0b;"></span>
+                                </span>
+                                <span style="font-size: 0.75rem; color: #fcd34d; font-weight: 600;">IN
+                                    DEVELOPMENT</span>
+                            </div>
+                            <span id="serverPlayerCount"
+                                style="font-size: 0.75rem; color: #94a3b8; font-family: monospace;">LOCKED</span>
+                        </div>
+                        <!-- Mini Progress Bar -->
+                        <div
+                            style="width: 100%; background: rgba(255, 255, 255, 0.08); border-radius: 4px; height: 6px; overflow: hidden;">
+                            <div id="serverProgressBar"
+                                style="width: 0%; background: linear-gradient(90deg, #f59e0b, #fbbf24); height: 100%; border-radius: 4px; transition: width 0.5s ease;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Button triggers custom popup instead of raw protocol link -->
+                <button type="button" onclick="openServerConnectModal()" class="btn-dash secondary"
+                    style="border-color: rgba(245, 158, 11, 0.3); color: #fbbf24;">
+                    <i class="fa-solid fa-gamepad"></i> Connect Server
+                </button>
+            </div>
+
+            <!-- Custom Connect Modal Overlay -->
+            <div id="serverConnectModal"
+                style="display: none; position: fixed; inset: 0; background: rgba(2, 6, 23, 0.8); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center;">
+                <div
+                    style="background: #0f172a; border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; padding: 24px; width: 100%; max-width: 400px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                        <div
+                            style="background: rgba(245, 158, 11, 0.1); padding: 10px; border-radius: 8px; color: #f59e0b;">
+                            <i class="fa-solid fa-triangle-exclamation" style="font-size: 1.25rem;"></i>
+                        </div>
+                        <div>
+                            <h4 style="color: #f8fafc; font-size: 1rem; font-weight: 600; margin: 0;">Server Under
+                                Construction</h4>
+                            <p style="color: #94a3b8; font-size: 0.8rem; margin: 2px 0 0 0;">UPN Game Server is
+                                currently in early setup.</p>
+                        </div>
+                    </div>
+                    <p style="color: #cbd5e1; font-size: 0.875rem; line-height: 1.5; margin-bottom: 20px;">
+                        We are actively building the server environment. Please check back later for access to the server. In the meantime apply to be whitelisted!
+                    </p>
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button type="button" onclick="closeServerConnectModal()" class="btn-dash secondary"
+                            style="padding: 8px 16px; font-size: 0.875rem;">Close</button>
+                        
+                    </div>
+                </div>
+            </div>
+
+            <script>
+                function openServerConnectModal() {
+                    document.getElementById('serverConnectModal').style.display = 'flex';
+                }
+                function closeServerConnectModal() {
+                    document.getElementById('serverConnectModal').style.display = 'none';
+                }
+            </script>
+
+            <!-- 2. Store Card -->
+            <div class="dash-card">
+                <div>
+                    <div class="dash-card-header">
+                        <i class="fa-solid fa-store"></i>
+                        <h3>UPN Store</h3>
+                    </div>
+                    <p>Explore exclusive supporter perks, priority queue access, and custom vehicle packages.</p>
+                </div>
+                <button type="button" onclick="openStoreNotice()" class="btn-dash secondary">Visit Store</button>
+            </div>
+
+            <!-- 3. Discord Community Card -->
+            <div class="dash-card">
+                <div>
+                    <div class="dash-card-header">
+                        <i class="fa-brands fa-discord" style="color: #5865F2;"></i>
+                        <h3>Discord Community</h3>
+                    </div>
+                    <p>Check out who's currently online, view active members in real-time, and join our server.</p>
+                </div>
+                <button type="button" onclick="openDiscordModal()" class="btn-dash secondary"
+                    style="border-color: rgba(88, 101, 242, 0.3); color: #8ea1ff;">
+                    <i class="fa-solid fa-users"></i> View Members
+                </button>
+            </div>
+
+            <!-- 4. Profile Card -->
+            <div class="dash-card" style="position: relative; overflow: hidden;">
+                <% let userStrikes=user.strikes || user.strikeCount || 0; %>
+                    <div>
+                        <div class="dash-card-header" style="margin-bottom: 14px;">
+                            <div
+                                style="width: 32px; height: 32px; border-radius: 8px; background: rgba(59, 130, 246, 0.12); display: flex; align-items: center; justify-content: center;">
+                                <i class="fa-solid fa-id-badge" style="color: #3b82f6; font-size: 0.9rem;"></i>
+                            </div>
+                            <h3>Your Profile</h3>
+                        </div>
+
+                        <div class="profile-card-content" style="gap: 10px;">
+                            <div style="position: relative; display: inline-block;">
+                                <% if (user.avatar) { %>
+                                    <img src="https://cdn.discordapp.com/avatars/<%= user.id %>/<%= user.avatar %>.png"
+                                        alt="Avatar" class="avatar"
+                                        style="box-shadow: 0 0 0 3px <%= userStrikes >= 4 ? 'rgba(239, 68, 68, 0.3)' : 'rgba(59, 130, 246, 0.2)' %>;">
+                                    <% } else { %>
+                                        <img src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Avatar"
+                                            class="avatar"
+                                            style="box-shadow: 0 0 0 3px <%= userStrikes >= 4 ? 'rgba(239, 68, 68, 0.3)' : 'rgba(59, 130, 246, 0.2)' %>;">
+                                        <% } %>
+                                            <span
+                                                style="position: absolute; bottom: 2px; right: 2px; width: 12px; height: 12px; background-color: <%= userStrikes >= 4 ? '#ef4444' : '#10b981' %>; border: 2px solid #0f172a; border-radius: 50%;"></span>
+                            </div>
+
+                            <div class="profile-info" style="width: 100%;">
+                                <h4
+                                    style="font-weight: 600; font-size: 0.95rem; letter-spacing: -0.01em; color: #f8fafc; margin-bottom: 10px;">
+                                    <%= user.username %>
+                                </h4>
+
+                                <div
+                                    style="background: rgba(2, 6, 23, 0.4); border: 1px solid rgba(255, 255, 255, 0.04); border-radius: 10px; padding: 10px; text-align: left;">
+                                    <div
+                                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                        <span
+                                            style="font-size: 0.65rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700;">Active
+                                            Roles</span>
+                                        <% if (user.roles && Array.isArray(user.roles)) { %>
+                                            <span
+                                                style="font-size: 0.6rem; color: #3b82f6; background: rgba(59, 130, 246, 0.1); padding: 2px 6px; border-radius: 10px; font-weight: 600;">
+                                                <%= user.roles.length %>
+                                            </span>
+                                            <% } %>
+                                    </div>
+
+                                    <% if (user.roles && Array.isArray(user.roles) && user.roles.length> 0) { %>
+                                        <div id="roleContainer"
+                                            style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center; max-height: 60px; overflow: hidden; transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
+                                            <% user.roles.forEach((role)=> {
+                                                let roleName = typeof role === 'object' && role !== null ? role.name :
+                                                role;
+                                                let roleColorNum = typeof role === 'object' && role !== null ?
+                                                role.color : 0;
+                                                let hexColor = roleColorNum ? '#' +
+                                                roleColorNum.toString(16).padStart(6, '0') : '#7289da';
+                                                %>
+                                                <span class="discord-role-pill"
+                                                    style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.65rem; background: <%= hexColor %>12; color: <%= hexColor === '#000000' ? '#ffffff' : hexColor %>; border: 1px solid <%= hexColor %>30; padding: 2px 6px; border-radius: 6px; font-weight: 500;">
+                                                    <span
+                                                        style="width: 5px; height: 5px; background-color: <%= hexColor === '#000000' ? '#ffffff' : hexColor %>; border-radius: 50%; display: inline-block;"></span>
+                                                    <%= roleName %>
+                                                </span>
+                                                <% }) %>
+                                        </div>
+
+                                        <% if (user.roles.length> 3) { %>
+                                            <button type="button" id="toggleRolesBtn" onclick="toggleRoleBox()"
+                                                style="background: none; border: none; color: #60a5fa; font-size: 0.7rem; padding: 6px 0 2px 0; cursor: pointer; font-weight: 600; display: block; width: 100%; text-align: center; transition: color 0.2s;">
+                                                View all roles (<%= user.roles.length %>)
+                                            </button>
+                                            <% } %>
+                                                <% } else { %>
+                                                    <span
+                                                        style="font-size: 0.75rem; color: #64748b; font-style: italic;">No
+                                                        Roles Assigned</span>
+                                                    <% } %>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 12px;">
+                        <a href="/profile" class="btn-dash <%= userStrikes >= 4 ? 'danger' : 'secondary' %>"
+                            style="border-radius: 10px;">
+                            <i class="fa-solid fa-gear" style="font-size: 0.8rem;"></i> Manage Profile
+                        </a>
+                    </div>
+            </div>
+
+            <!-- 5. Application Button Card -->
+            <div id="whitelistCard" class="dash-card transition-all duration-300"
+                style="border-color: rgba(59, 130, 246, 0.3); background: linear-gradient(145deg, #0f172a 0%, #101d36 100%);">
+                <div>
+                    <div class="dash-card-header">
+                        <i class="fa-solid fa-file-pen" style="color: #3b82f6;"></i>
+                        <h3>Whitelist Application</h3>
+                    </div>
+                    <p id="whitelistCardText">Ready to join our core patrols? Fill out your official community
+                        application to get started.</p>
+                </div>
+                <a id="whitelistApplyBtn" href="#" onclick="openApplyModal(event)" class="btn-dash">
+                    <i class="fa-solid fa-paper-plane"></i> Apply Now
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Strike Warning Popup Modal -->
+    <div id="strikeWarningModal" class="custom-modal-overlay">
+        <div class="custom-modal-box" style="border-color: rgba(239, 68, 68, 0.3);">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; color: #ef4444;">
+                <div style="padding: 8px; background-color: rgba(239, 68, 68, 0.12); border-radius: 8px;">
+                    <i class="fa-solid fa-triangle-exclamation" style="font-size: 1.1rem;"></i>
+                </div>
+                <h3 style="color: #f8fafc; font-size: 1.05rem; font-weight: 700; margin: 0;">Account Standing Warning
+                </h3>
+            </div>
+            <p style="color: #94a3b8; font-size: 0.85rem; line-height: 1.5; margin-bottom: 18px;">
+                Your account currently has <span style="color: #ef4444; font-weight: 700;">
+                    <%= userStrikes %> active strikes
+                </span>. Please review your standing history and details immediately to avoid further actions.
+            </p>
+            <div style="display: flex; gap: 10px;">
+                <button type="button" onclick="closeStrikeModal()" class="btn-dash secondary" style="flex: 1;">
+                    Dismiss
+                </button>
+                <a href="/profile" class="btn-dash danger" style="flex: 1;">
+                    Check Profile
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Store Notice Modal -->
+    <div id="storeNoticeModal" class="custom-modal-overlay">
+        <div class="custom-modal-box">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; color: #f59e0b;">
+                <div style="padding: 8px; background-color: rgba(245, 158, 11, 0.12); border-radius: 8px;">
+                    <i class="fa-solid fa-store" style="font-size: 1.1rem;"></i>
+                </div>
+                <h3 style="color: #f8fafc; font-size: 1.05rem; font-weight: 700; margin: 0;">Store Notice</h3>
+            </div>
+            <p style="color: #94a3b8; font-size: 0.85rem; line-height: 1.5; margin-bottom: 18px;">
+                As of right now we are not connected to third-party checkouts. Please create a ticket in Discord for
+                store inquiries. This will be migrated to <span style="color: #60a5fa; font-weight: 600;">TEBEX</span>
+                shortly.
+            </p>
+            <button type="button" onclick="closeStoreNotice()" class="btn-dash">
+                Got it, thanks!
+            </button>
+        </div>
+    </div>
+
+    <!-- Application Notice Modal -->
+    <div id="applyModal" class="custom-modal-overlay">
+        <div class="custom-modal-box">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; color: #60a5fa;">
+                <div style="padding: 8px; background-color: rgba(96, 165, 250, 0.12); border-radius: 8px;">
+                    <i class="fa-solid fa-circle-info" style="font-size: 1.1rem;"></i>
+                </div>
+                <h3 style="color: #f8fafc; font-size: 1.05rem; font-weight: 700; margin: 0;">Application Notice</h3>
+            </div>
+            <p style="color: #94a3b8; font-size: 0.85rem; line-height: 1.5; margin-bottom: 18px;">
+                Please take your time and be honest on your application. Accurate information helps our admin team
+                review your record smoothly!
+            </p>
+            <div style="display: flex; gap: 10px;">
+                <button type="button" onclick="closeApplyModal()" class="btn-dash secondary" style="flex: 1;">
+                    Go Back
+                </button>
+                <a href="/apply" class="btn-dash" style="flex: 1;">
+                    I'm Ready
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Discord Community Members Modal -->
+    <div id="discordMembersModal" class="custom-modal-overlay">
+        <div class="custom-modal-box" style="max-width: 420px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+                <div style="display: flex; align-items: center; gap: 10px; color: #5865F2;">
+                    <div style="padding: 8px; background-color: rgba(88, 101, 242, 0.12); border-radius: 8px;">
+                        <i class="fa-brands fa-discord" style="font-size: 1.1rem;"></i>
+                    </div>
+                    <div>
+                        <h3 style="color: #f8fafc; font-size: 1.05rem; font-weight: 700; margin: 0;">Discord Community
+                        </h3>
+                        <p id="discordOnlineCount" style="color: #94a3b8; font-size: 0.75rem; margin: 0;">Connecting to
+                            server...</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeDiscordModal()"
+                    style="background: rgba(255, 255, 255, 0.05); border: none; color: #94a3b8; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Member List Container -->
+            <div id="discordMemberList"
+                style="min-height: 220px; max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; padding-right: 4px;">
+                <div style="text-align: center; color: #64748b; padding: 24px 0; font-size: 0.85rem;">
+                    <i class="fa-solid fa-spinner fa-spin" style="margin-right: 6px;"></i> Loading active members...
+                </div>
+            </div>
+
+            <!-- Pagination Controls -->
+            <div id="discordPagination"
+                style="display: none; align-items: center; justify-content: space-between; margin-bottom: 14px; font-size: 0.8rem; color: #94a3b8; background: rgba(2, 6, 23, 0.3); padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.03);">
+                <button type="button" id="prevPageBtn" onclick="changeDiscordPage(-1)" class="btn-dash secondary"
+                    style="padding: 5px 10px; font-size: 0.7rem; width: auto; background: rgba(255, 255, 255, 0.05);">
+                    <i class="fa-solid fa-chevron-left"></i> Prev
+                </button>
+                <span id="pageIndicator" style="font-weight: 600; color: #f8fafc;">Page 1 of 1</span>
+                <button type="button" id="nextPageBtn" onclick="changeDiscordPage(1)" class="btn-dash secondary"
+                    style="padding: 5px 10px; font-size: 0.7rem; width: auto; background: rgba(255, 255, 255, 0.05);">
+                    Next <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button type="button" onclick="closeDiscordModal()" class="btn-dash secondary" style="flex: 1;">
+                    Close
+                </button>
+                <a href="https://discord.gg/Gu9FshfnkT" target="_blank" class="btn-dash"
+                    style="flex: 1; background: linear-gradient(135deg, #5865F2 0%, #4752C4 100%); box-shadow: 0 3px 10px rgba(88, 101, 242, 0.3);">
+                    <i class="fa-brands fa-discord"></i> Join Server
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <%- include('partials/footer') %>
+
+
+    <!-- Modals & Script Control -->
+    <script>
+        let discordMembersData = [];
+        let currentDiscordPage = 1;
+        const membersPerPage = 6;
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            const currentUserId = '<%= user ? user.id : "" %>';
+            if (!currentUserId) return;
+
+            try {
+                const response = await fetch('/api/check-guild-membership');
+                if (!response.ok) return;
+                const data = await response.json();
+
+                if (data && data.inGuild === false) {
+                    const card = document.getElementById('whitelistCard');
+                    const applyBtn = document.getElementById('whitelistApplyBtn');
+                    const cardText = document.getElementById('whitelistCardText');
+
+                    if (card) {
+                        card.style.background = 'linear-gradient(145deg, #090d16 0%, #0d121f 100%)';
+                        card.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                        card.style.opacity = '0.75';
+                    }
+
+                    if (cardText) {
+                        cardText.innerHTML = '<span style="color: #fbbf24; font-weight: 600;"><i class="fa-solid fa-lock" style="margin-right: 4px;"></i> Locked:</span> You must join our Discord server before you can submit an application.';
+                    }
+
+                    if (applyBtn) {
+                        applyBtn.href = 'https://discord.gg/Gu9FshfnkT';
+                        applyBtn.target = '_blank';
+                        applyBtn.className = 'btn-dash secondary';
+                        applyBtn.style.background = '#1e293b';
+                        applyBtn.style.borderColor = '#334155';
+                        applyBtn.style.color = '#94a3b8';
+                        applyBtn.innerHTML = '<i class="fa-brands fa-discord" style="color: #818cf8;"></i> Join Server to Unlock';
+                        applyBtn.onclick = function (e) {
+                            e.stopPropagation();
+                        };
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to verify guild membership via bot:', err);
+            }
+        });
+
+        function closeStrikeModal() {
+            document.getElementById('strikeWarningModal').classList.remove('active');
+        }
+
+        function openStoreNotice() {
+            document.getElementById('storeNoticeModal').classList.add('active');
+        }
+
+        function closeStoreNotice() {
+            document.getElementById('storeNoticeModal').classList.remove('active');
+        }
+
+        function openApplyModal(event) {
+            event.preventDefault();
+            document.getElementById('applyModal').classList.add('active');
+        }
+
+        function closeApplyModal() {
+            document.getElementById('applyModal').classList.remove('active');
+        }
+
+        function openDiscordModal() {
+            document.getElementById('discordMembersModal').classList.add('active');
+            fetchDiscordWidgetData();
+        }
+
+        function closeDiscordModal() {
+            document.getElementById('discordMembersModal').classList.remove('active');
+        }
+
+        async function fetchDiscordWidgetData() {
+            const listContainer = document.getElementById('discordMemberList');
+            const countLabel = document.getElementById('discordOnlineCount');
+            const paginationContainer = document.getElementById('discordPagination');
+
+            try {
+                const response = await fetch('/api/discord-widget');
+                if (!response.ok) throw new Error('Failed to fetch widget data');
+
+                const data = await response.json();
+                countLabel.innerText = `${data.presence_count || 0} Members Online`;
+
+                if (!data.members || data.members.length === 0) {
+                    listContainer.innerHTML = `<div style="text-align: center; color: #64748b; padding: 20px 0; font-size: 0.8rem;">No members currently visible.</div>`;
+                    paginationContainer.style.display = 'none';
+                    return;
+                }
+
+                discordMembersData = data.members;
+                currentDiscordPage = 1;
+                renderDiscordPage();
+
+            } catch (err) {
+                console.error(err);
+                listContainer.innerHTML = `<div style="text-align: center; color: #ef4444; padding: 20px 0; font-size: 0.8rem;">Could not load server members. Make sure the Discord Server Widget is enabled in your server settings!</div>`;
+                countLabel.innerText = 'Widget unavailable';
+                paginationContainer.style.display = 'none';
+            }
+        }
+
+        function renderDiscordPage() {
+            const listContainer = document.getElementById('discordMemberList');
+            const paginationContainer = document.getElementById('discordPagination');
+            const pageIndicator = document.getElementById('pageIndicator');
+            const prevBtn = document.getElementById('prevPageBtn');
+            const nextBtn = document.getElementById('nextPageBtn');
+
+            const totalPages = Math.ceil(discordMembersData.length / membersPerPage) || 1;
+            if (currentDiscordPage > totalPages) currentDiscordPage = totalPages;
+            if (currentDiscordPage < 1) currentDiscordPage = 1;
+
+            const startIndex = (currentDiscordPage - 1) * membersPerPage;
+            const endIndex = startIndex + membersPerPage;
+            const currentSlice = discordMembersData.slice(startIndex, endIndex);
+
+            let html = '';
+            currentSlice.forEach(member => {
+                const statusColor = member.status === 'online' ? '#3ba55d' :
+                    member.status === 'idle' ? '#faa81a' :
+                        member.status === 'dnd' ? '#ed4245' : '#747f8d';
+
+                const avatarUrl = member.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png';
+                const gameName = member.game ? member.game.name : null;
+
+                html += `
+                <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(2, 6, 23, 0.4); border: 1px solid rgba(255, 255, 255, 0.03); padding: 6px 10px; border-radius: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px; overflow: hidden;">
+                        <div style="position: relative; flex-shrink: 0;">
+                            <img src="${avatarUrl}" alt="" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;">
+                            <span style="position: absolute; bottom: 0; right: 0; width: 8px; height: 8px; background-color: ${statusColor}; border: 2px solid #0f172a; border-radius: 50%;"></span>
+                        </div>
+                        <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                            <div style="font-size: 0.8rem; font-weight: 600; color: #f8fafc; overflow: hidden; text-overflow: ellipsis;">${member.username}</div>
+                            <div style="font-size: 0.65rem; color: #94a3b8; overflow: hidden; text-overflow: ellipsis;">${gameName ? 'Playing ' + gameName : member.status}</div>
+                        </div>
+                    </div>
+                </div>`;
+            });
+
+            listContainer.innerHTML = html;
+
+            if (totalPages > 1) {
+                paginationContainer.style.display = 'flex';
+                pageIndicator.innerText = `Page ${currentDiscordPage} of ${totalPages}`;
+                prevBtn.disabled = currentDiscordPage === 1;
+                nextBtn.disabled = currentDiscordPage === totalPages;
+                prevBtn.style.opacity = currentDiscordPage === 1 ? '0.5' : '1';
+                nextBtn.style.opacity = currentDiscordPage === totalPages ? '0.5' : '1';
+            } else {
+                paginationContainer.style.display = 'none';
+            }
+        }
+
+        function changeDiscordPage(direction) {
+            currentDiscordPage += direction;
+            renderDiscordPage();
+        }
+
+        function toggleRoleBox() {
+            const container = document.getElementById('roleContainer');
+            const btn = document.getElementById('toggleRolesBtn');
+            if (container.style.maxHeight !== 'none') {
+                container.style.maxHeight = 'none';
+                btn.innerText = 'Collapse roles';
+            } else {
+                container.style.maxHeight = '60px';
+                btn.innerText = 'View all roles (<%= user.roles ? user.roles.length : 0 %>)';
+            }
+        }
+    </script>

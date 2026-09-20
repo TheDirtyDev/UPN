@@ -1,0 +1,398 @@
+<%- include('partials/header') %>
+
+    <style>
+        /* Scoped CSS for Profile Page */
+        .profile-container {
+            flex: 1;
+            padding: 50px 8%;
+            background-color: #0b0f19;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .profile-header-card {
+            background-color: #111827;
+            border: 1px solid #1f2937;
+            border-radius: 12px;
+            padding: 40px;
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .profile-avatar {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            border: 3px solid #3b82f6;
+            object-fit: cover;
+        }
+
+        .profile-info h1 {
+            color: #ffffff;
+            font-size: 2rem;
+            margin-bottom: 5px;
+        }
+
+        .discord-tag {
+            color: #9ca3af;
+            font-size: 0.95rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .badge-container {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .status-pill {
+            font-size: 0.75rem;
+            font-weight: bold;
+            padding: 5px 12px;
+            border-radius: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-pill.pending {
+            background-color: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .status-pill.approved {
+            background-color: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .status-pill.denied {
+            background-color: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        /* Dynamic Standing Pills */
+        .status-pill.standing-okay {
+            background-color: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .status-pill.standing-warning {
+            background-color: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .status-pill.standing-danger {
+            background-color: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        /* Section Wrapper */
+        .profile-section {
+            width: 100%;
+            max-width: 900px;
+            margin-bottom: 25px;
+        }
+
+        .profile-section h3 {
+            color: #ffffff;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .profile-section h3 i {
+            color: #3b82f6;
+        }
+
+        /* Details Grid */
+        .profile-details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+            gap: 20px;
+            width: 100%;
+            align-items: start; /* Prevents grid items from stretching to match the tallest box height */
+        }
+
+        .detail-card {
+            background-color: #111827;
+            border: 1px solid #1f2937;
+            border-radius: 10px;
+            padding: 20px;
+            transition: border-color 0.2s;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .detail-card:hover {
+            border-color: #374151;
+        }
+
+        .detail-card label {
+            display: block;
+            color: #9ca3af;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .detail-card span {
+            color: #ffffff;
+            font-size: 1.05rem;
+            font-weight: 600;
+        }
+
+        /* Application Status Box */
+        .app-status-box {
+            background-color: #111827;
+            border: 1px solid #1f2937;
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .app-status-info strong {
+            color: #ffffff;
+            display: block;
+            margin-bottom: 4px;
+            font-size: 1rem;
+        }
+
+        .app-status-info span {
+            color: #9ca3af;
+            font-size: 0.85rem;
+        }
+
+        /* Navigation Actions */
+        .profile-actions {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .btn-action {
+            padding: 11px 22px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-secondary {
+            background-color: #1f2937;
+            color: #ffffff;
+            border: 1px solid #374151;
+        }
+
+        .btn-secondary:hover {
+            background-color: #374151;
+        }
+
+        .btn-danger {
+            color: #ef4444;
+            background-color: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .btn-danger:hover {
+            background-color: rgba(239, 68, 68, 0.2);
+        }
+    </style>
+
+    <% 
+        let strikeCount = 0; 
+        if (typeof user.strikes === 'number') { 
+            strikeCount = user.strikes; 
+        } else if (typeof user.strikes === 'string') { 
+            const parsed = parseInt(user.strikes); 
+            strikeCount = isNaN(parsed) ? 0 : parsed; 
+        } 
+
+        let standingText = 'OKAY'; 
+        let standingClass = 'standing-okay'; 
+        if (strikeCount === 3) {
+            standingText = 'POSSIBLE SUSPENSION'; 
+            standingClass = 'standing-warning'; 
+        } else if (strikeCount > 3) {
+            standingText = 'SUSPENDED / AT RISK';
+            standingClass = 'standing-danger';
+        }
+
+        let wlClass = 'pending';
+        if (user.whitelistStatus === 'Approved') wlClass = 'approved';
+        if (user.whitelistStatus === 'Denied') wlClass = 'denied';
+    %>
+
+    <main class="profile-container">
+
+        <!-- 1. Header Banner Card -->
+        <div class="profile-header-card">
+            <% if (user.avatar) { %>
+                <img src="https://cdn.discordapp.com/avatars/<%= user.id %>/<%= user.avatar %>.png" alt="Avatar" class="profile-avatar">
+            <% } else { %>
+                <img src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Avatar" class="profile-avatar">
+            <% } %>
+            <div class="profile-info">
+                <h1><%= user.username %></h1>
+                <p class="discord-tag"><i class="fa-brands fa-discord"></i> Discord ID: <%= user.id %></p>
+                <div class="badge-container">
+                    <span class="status-pill <%= wlClass %>">Whitelist: <%= user.whitelistStatus || 'Pending Review' %></span>
+                    <span class="status-pill <%= standingClass %>">Standing: <%= standingText %></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Game & Server Credentials Grid -->
+        <div class="profile-section">
+            <h3><i class="fa-solid fa-gamepad"></i> Game & Community Records</h3>
+            <div class="profile-details-grid">
+                <div class="detail-card">
+                    <div>
+                        <label><i class="fa-solid fa-id-card"></i> In-Game Callsign</label>
+                        <span><%= user.callsign || 'Not Assigned' %></span>
+                    </div>
+                </div>
+                <div class="detail-card">
+                    <div>
+                        <label><i class="fa-solid fa-shield-halved"></i> Department / Division</label>
+                        <span><%= user.department || 'Unassigned' %></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Account Activity Grid -->
+        <div class="profile-section">
+            <h3><i class="fa-solid fa-chart-line"></i> Activity & Standing</h3>
+            <div class="profile-details-grid">
+                
+                <!-- Patrol Hours Card -->
+                <div class="detail-card">
+                    <label><i class="fa-solid fa-clock"></i> Recorded Patrol Hours</label>
+                    <span><%= user.patrolHours || '0.0 hrs' %></span>
+                </div>
+
+                <!-- Active Strikes Card with Integrated Appeals Dropdown -->
+                <div class="detail-card" style="padding: 0; overflow: hidden; display: flex; flex-direction: column;">
+                    
+                    <!-- Top Summary Portion -->
+                    <div style="padding: 20px;">
+                        <label><i class="fa-solid fa-triangle-exclamation"></i> Active Strikes</label>
+                        <span style="color: <%= strikeCount > 3 ? '#ef4444' : (strikeCount === 3 ? '#f59e0b' : '#10b981') %>;">
+                            <%= strikeCount %> <%= strikeCount === 1 ? 'Strike' : 'Strikes' %>
+                        </span>
+                    </div>
+
+                    <!-- Dropdown Toggle Button (Compact) -->
+                    <button type="button" onclick="toggleAppealsDropdown()" style="background: rgba(255, 255, 255, 0.02); border: none; border-top: 1px solid #1f2937; width: 100%; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; color: #fff; cursor: pointer; font-family: inherit; font-size: 0.85rem; font-weight: 600;">
+                        <span style="display: flex; align-items: center; gap: 6px; color: #3b82f6;">
+                            <i class="fa-solid fa-scale-balanced" style="font-size: 0.8rem;"></i> Appeals
+                        </span>
+                        <i id="appealsChevron" class="fa-solid fa-chevron-down" style="color: #9ca3af; font-size: 0.8rem; transition: transform 0.3s ease;"></i>
+                    </button>
+                    
+                    <!-- Collapsible Content Section -->
+                    <div id="appealsContent" style="max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding 0.3s ease; padding: 0 20px; background: rgba(0,0,0,0.2); border-top: 1px solid transparent;">
+                        <p style="color: #9ca3af; font-size: 0.8rem; line-height: 1.4; margin: 0 0 10px 0;">
+                            Believe a strike was issued incorrectly? Submit a formal appeal to leadership.
+                        </p>
+                        <a href="https://discord.gg/R5TvEWKr2r" target="_blank" class="btn-dash secondary" style="display: inline-block; width: 100%; margin-bottom: 12px; text-decoration: none; box-sizing: border-box; text-align: center; font-size: 0.8rem; padding: 6px 10px;">
+                            <i class="fa-brands fa-discord"></i> Open Appeal Ticket
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Account Linked Card -->
+                <div class="detail-card">
+                    <label><i class="fa-solid fa-calendar"></i> Account Linked</label>
+                    <span><%= user.joinedDate || 'September 2026' %></span>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- 4. Whitelist Application Status Tracker -->
+        <div class="profile-section">
+            <h3><i class="fa-solid fa-file-lines"></i> Application Tracker</h3>
+            <div class="app-status-box">
+                <div class="app-status-info">
+                    <strong>Core Whitelist Application</strong>
+                    <span>Submitted for United Patrol Network core access</span>
+                </div>
+                <span class="status-pill <%= wlClass %>">
+                    <%= user.whitelistStatus || 'Pending Review' %>
+                </span>
+            </div>
+        </div>
+
+        <!-- 5. Navigation Actions -->
+        <div class="profile-actions">
+            <a href="/dashboard" class="btn-action btn-secondary">
+                <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+            </a>
+            <a href="/logout" class="btn-action btn-danger">
+                <i class="fa-solid fa-right-from-bracket"></i> Logout
+            </a>
+        </div>
+
+    </main>
+
+    <script>
+        function toggleAppealsDropdown() {
+            const content = document.getElementById('appealsContent');
+            const chevron = document.getElementById('appealsChevron');
+            
+            if (content.style.maxHeight && content.style.maxHeight !== '0px') {
+                content.style.maxHeight = '0px';
+                content.style.padding = '0 20px';
+                content.style.borderTopColor = 'transparent';
+                chevron.style.transform = 'rotate(0deg)';
+            } else {
+                content.style.maxHeight = content.scrollHeight + 30 + 'px';
+                content.style.padding = '12px 20px 12px 20px';
+                content.style.borderTopColor = '#1f2937';
+                chevron.style.transform = 'rotate(180deg)';
+            }
+        }
+    </script>
+
+<%- include('partials/footer') %>

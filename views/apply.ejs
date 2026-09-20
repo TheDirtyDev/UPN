@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server Application | UPN</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-[#0b0f19] text-slate-100 min-h-screen flex flex-col justify-between selection:bg-blue-600 selection:text-white relative">
+
+    <%- include('partials/header') %>
+
+
+    <!-- Form Container -->
+    <main class="max-w-3xl mx-auto w-full p-6 my-10">
+        
+        <!-- Header Banner -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-extrabold text-white tracking-tight mb-2">Server Whitelist Application</h1>
+            <p class="text-slate-400 text-sm">Please fill out all sections comprehensively. Our administrative team reviews submissions thoroughly.</p>
+        </div>
+
+        <!-- Status Banners & Form Locking Logic -->
+        <% const isDenied = dbUser && dbUser.whitelistStatus === 'Denied'; %>
+        <% const isLocked = dbUser && (dbUser.whitelistStatus === 'Approved' || dbUser.whitelistStatus === 'Pending'); %>
+
+        <% if (dbUser && dbUser.whitelistStatus === 'Approved') { %>
+            <div class="bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 p-4 rounded-xl mb-6 text-sm flex items-start gap-3">
+                <i class="fa-solid fa-circle-check text-emerald-400 text-lg mt-0.5"></i>
+                <div>
+                    <strong class="font-semibold text-white">Application Status: Approved</strong>
+                    <p class="text-emerald-400/90 text-xs mt-0.5">Your whitelist is active! Your application has been locked from further submissions.</p>
+                </div>
+            </div>
+        <% } else if (dbUser && dbUser.whitelistStatus === 'Pending') { %>
+            <div class="bg-amber-950/40 border border-amber-500/30 text-amber-300 p-4 rounded-xl mb-6 text-sm flex items-start gap-3">
+                <i class="fa-solid fa-clock text-amber-400 text-lg mt-0.5"></i>
+                <div>
+                    <strong class="font-semibold text-white">Application Status: Pending Review</strong>
+                    <p class="text-amber-400/90 text-xs mt-0.5">You have already submitted an application. It is currently awaiting review by our administrative team.</p>
+                </div>
+            </div>
+        <% } else if (isDenied) { %>
+            <div class="bg-rose-950/40 border border-rose-500/30 text-rose-300 p-4 rounded-xl mb-6 text-sm flex items-start gap-3">
+                <i class="fa-solid fa-circle-xmark text-rose-400 text-lg mt-0.5"></i>
+                <div>
+                    <strong class="font-semibold text-white">Application Status: Denied</strong>
+                    <p class="text-rose-400/90 text-xs mt-0.5">Your previous application was not accepted. You may now update your answers and resubmit below. Note: A second denial will result in a 14-day community ban.</p>
+                </div>
+            </div>
+        <% } %>
+
+        <form action="/apply" method="POST" class="space-y-8 bg-slate-900/60 backdrop-blur border border-slate-800/80 p-8 rounded-2xl shadow-2xl">
+            
+            <!-- SECTION 1: Personal Details -->
+            <div>
+                <div class="flex items-center justify-between pb-3 mb-5 border-b border-slate-800">
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-user-shield text-blue-500"></i> Personal Information
+                    </h2>
+                    <span class="text-xs px-2.5 py-1 bg-slate-800 text-slate-400 rounded-full border border-slate-700/60 flex items-center gap-1.5" title="Strictly confidential, used for age verification and identity checks only.">
+                        <i class="fa-solid fa-lock text-[10px] text-amber-400"></i> Not shared publicly
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">Real-Life Name</label>
+                        <input type="text" name="irl_name" required placeholder="John Doe" value="<%= dbUser ? dbUser.irl_name || '' : '' %>" <%= isLocked ? 'disabled' : '' %>
+                            class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-blue-500 transition <%= isLocked ? 'opacity-60 cursor-not-allowed' : '' %>">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">Real-Life Age / Birthday</label>
+                        <input type="text" name="irl_age_bday" required placeholder="18 (MM/DD/YYYY)" value="<%= dbUser ? dbUser.irl_age_bday || '' : '' %>" <%= isLocked ? 'disabled' : '' %>
+                            class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-blue-500 transition <%= isLocked ? 'opacity-60 cursor-not-allowed' : '' %>">
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 2: Main Character Details -->
+            <div>
+                <div class="flex items-center justify-between pb-3 mb-5 border-b border-slate-800">
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-id-card text-blue-500"></i> Main Character Profile
+                    </h2>
+                    <span class="text-xs px-2.5 py-1 bg-blue-500/10 text-blue-400 rounded-full border border-blue-500/20 flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-info"></i> Primary RP Identity
+                    </span>
+                </div>
+                
+                <p class="text-xs text-slate-400 mb-4 bg-slate-950/50 p-3 rounded-lg border border-slate-800">
+                    <i class="fa-solid fa-lightbulb text-amber-400 mr-1"></i> This is your <strong>MAIN</strong> character for roleplay. You can register up to 2 additional characters in-game later excluding this one! :)
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">Character Name</label>
+                        <input type="text" name="rp_name" required placeholder="e.g., Marcus Vance" value="<%= dbUser ? dbUser.rp_name || '' : '' %>" <%= isLocked ? 'disabled' : '' %>
+                            class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-blue-500 transition <%= isLocked ? 'opacity-60 cursor-not-allowed' : '' %>">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">Character Age</label>
+                        <input type="number" name="rp_age" required min="18" placeholder="e.g., 28" value="<%= dbUser ? dbUser.rp_age || '' : '' %>" <%= isLocked ? 'disabled' : '' %>
+                            class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-blue-500 transition <%= isLocked ? 'opacity-60 cursor-not-allowed' : '' %>">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">Character Residence / Address</label>
+                        <input type="text" name="rp_address" required placeholder="e.g., 1424 Vinewood Blvd" value="<%= dbUser ? dbUser.rp_address || '' : '' %>" <%= isLocked ? 'disabled' : '' %>
+                            class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-blue-500 transition <%= isLocked ? 'opacity-60 cursor-not-allowed' : '' %>">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">Physical Description</label>
+                        <input type="text" name="rp_description" required placeholder="Ethnicity, eye color, hair, prominent style/job..." value="<%= dbUser ? dbUser.rp_description || '' : '' %>" <%= isLocked ? 'disabled' : '' %>
+                            class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-blue-500 transition <%= isLocked ? 'opacity-60 cursor-not-allowed' : '' %>">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">Character Background & Lore</label>
+                    <textarea name="rp_story" rows="4" required placeholder="Where is your character from? What are their core ambitions, flaws, and goals in the city?" <%= isLocked ? 'disabled' : '' %>
+                        class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-blue-500 transition <%= isLocked ? 'opacity-60 cursor-not-allowed' : '' %>"><%= dbUser ? dbUser.rp_story || '' : '' %></textarea>
+                </div>
+            </div>
+
+            <!-- SECTION 3: FiveM & Gaming History -->
+            <div>
+                <div class="pb-3 mb-5 border-b border-slate-800">
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-clock-rotate-left text-blue-500"></i> Experience & Background
+                    </h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">When did you join/start roleplay?</label>
+                        <input type="text" name="joined_rp" required placeholder="e.g., Mid 2023" value="<%= dbUser ? dbUser.joined_rp || '' : '' %>" <%= isLocked ? 'disabled' : '' %>
+                            class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-blue-500 transition <%= isLocked ? 'opacity-60 cursor-not-allowed' : '' %>">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">How long have you played FiveM? <span class="text-blue-400 font-normal">(Req. 4+ weeks)</span></label>
+                        <input type="text" name="fivem_time" required placeholder="e.g., 8 months" value="<%= dbUser ? dbUser.fivem_time || '' : '' %>" <%= isLocked ? 'disabled' : '' %>
+                            class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-blue-500 transition <%= isLocked ? 'opacity-60 cursor-not-allowed' : '' %>">
+                    </div>
+                </div>
+
+                <div class="space-y-5">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">Previous Communities / Servers</label>
+                        <input type="text" name="previous_servers" required placeholder="List notable servers you've played on..." value="<%= dbUser ? dbUser.previous_servers || '' : '' %>" <%= isLocked ? 'disabled' : '' %>
+                            class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-blue-500 transition <%= isLocked ? 'opacity-60 cursor-not-allowed' : '' %>">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">About Yourself (OOC)</label>
+                        <textarea name="about_yourself" rows="3" required placeholder="Tell us a bit about your hobbies, timezone, or play schedule..." <%= isLocked ? 'disabled' : '' %>
+                            class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-blue-500 transition <%= isLocked ? 'opacity-60 cursor-not-allowed' : '' %>"><%= dbUser ? dbUser.about_yourself || '' : '' %></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 4: Community Interests (Multi-Choice Grid) -->
+            <div>
+                <div class="pb-3 mb-2 border-b border-slate-800 flex items-center justify-between">
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-star text-blue-500"></i> Special Interests & Roles
+                    </h2>
+                    <span class="text-xs text-slate-400">Select any that apply</span>
+                </div>
+                <p class="text-xs text-slate-400 mb-4">If you have interests in any of these areas, check them below and our department leads will reach out to you.</p>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    
+                    <!-- Staff Option -->
+                    <label class="relative flex items-center p-4 bg-slate-950 border border-slate-800 rounded-xl transition group <%= isLocked ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:border-blue-500/50' %>">
+                        <input type="checkbox" name="interests" value="Staff" class="peer h-4 w-4 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500 focus:ring-offset-slate-950 <%= isLocked ? 'cursor-not-allowed' : 'cursor-pointer' %>" <%= dbUser && dbUser.interests && dbUser.interests.includes('Staff') ? 'checked' : '' %> <%= isLocked ? 'disabled' : '' %>>
+                        <div class="flex items-center space-x-3 w-full ml-3">
+                            <div>
+                                <span class="block text-sm font-semibold text-white group-hover:text-blue-400 transition">Staff Team</span>
+                                <span class="block text-xs text-slate-400">Moderation & Support</span>
+                            </div>
+                        </div>
+                    </label>
+
+                    <!-- LEO Option -->
+                    <label class="relative flex items-center p-4 bg-slate-950 border border-slate-800 rounded-xl transition group <%= isLocked ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:border-blue-500/50' %>">
+                        <input type="checkbox" name="interests" value="LEO" class="peer h-4 w-4 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500 focus:ring-offset-slate-950 <%= isLocked ? 'cursor-not-allowed' : 'cursor-pointer' %>" <%= dbUser && dbUser.interests && dbUser.interests.includes('LEO') ? 'checked' : '' %> <%= isLocked ? 'disabled' : '' %>>
+                        <div class="flex items-center space-x-3 w-full ml-3">
+                            <div>
+                                <span class="block text-sm font-semibold text-white group-hover:text-blue-400 transition">Law Enforcement</span>
+                                <span class="block text-xs text-slate-400">Police & Sheriff Divisions</span>
+                            </div>
+                        </div>
+                    </label>
+
+                    <!-- Streamer Option -->
+                    <label class="relative flex items-center p-4 bg-slate-950 border border-slate-800 rounded-xl transition group <%= isLocked ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:border-blue-500/50' %>">
+                        <input type="checkbox" name="interests" value="Streamer" class="peer h-4 w-4 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500 focus:ring-offset-slate-950 <%= isLocked ? 'cursor-not-allowed' : 'cursor-pointer' %>" <%= dbUser && dbUser.interests && dbUser.interests.includes('Streamer') ? 'checked' : '' %> <%= isLocked ? 'disabled' : '' %>>
+                        <div class="flex items-center space-x-3 w-full ml-3">
+                            <div>
+                                <span class="block text-sm font-semibold text-white group-hover:text-blue-400 transition">Content Creator</span>
+                                <span class="block text-xs text-slate-400">Streamer / Media Perks</span>
+                            </div>
+                        </div>
+                    </label>
+
+                </div>
+            </div>
+
+            <!-- Submit Action -->
+            <div class="pt-4 flex items-center gap-4">
+                <% if (dbUser && dbUser.whitelistStatus === 'Approved' || dbUser && dbUser.whitelistStatus === 'Pending') { %>
+                    <a href="/dashboard" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-4 rounded-xl transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-arrow-left"></i> Return to Dashboard
+                    </a>
+                <% } else if (isDenied) { %>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-4 rounded-xl transition shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-paper-plane"></i> Submit Resubmission Application
+                    </button>
+                <% } else { %>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-4 rounded-xl transition shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-paper-plane"></i> Submit Official Application
+                    </button>
+                <% } %>
+                
+                <!-- Quick Test Button to Trigger Modal Manually -->
+                <button type="button" onclick="toggleModal(true)" class="px-5 py-4 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-semibold transition border border-slate-700 shrink-0">
+                    <i class="fa-solid fa-circle-info"></i> Info
+                </button>
+            </div>
+
+        </form>
+    </main>
+
+
+
+
+    <!-- ========================================== -->
+    <!-- POPUP MODAL COMPONENT                      -->
+    <!-- ========================================== -->
+    <div id="appModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm transition-opacity duration-300 <%= (dbUser && dbUser.showPopup) || isDenied ? '' : 'opacity-0 pointer-events-none' %>">
+        <div class="bg-slate-900 border <%= isDenied ? 'border-rose-500/50' : 'border-slate-800' %> rounded-2xl max-w-md w-full p-6 shadow-2xl transform transition-transform duration-300 scale-100">
+            
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
+                <div class="flex items-center gap-3">
+                    <span class="p-2.5 <%= isDenied ? 'bg-rose-500/10 text-rose-400' : 'bg-blue-500/10 text-blue-400' %> rounded-xl">
+                        <i class="fa-solid <%= isDenied ? 'fa-triangle-exclamation' : 'fa-circle-info' %> text-lg"></i>
+                    </span>
+                    <h3 class="text-lg font-bold text-white"><%= isDenied ? 'Denied Application Warning' : 'Application Notice' %></h3>
+                </div>
+                <button type="button" onclick="toggleModal(false)" class="text-slate-400 hover:text-white transition p-1.5 rounded-lg hover:bg-slate-800">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Modal Content Body -->
+            <div class="space-y-3 text-sm text-slate-300 mb-6">
+                <% if (isDenied) { %>
+                    <div class="bg-rose-950/40 p-3.5 rounded-xl border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2.5">
+                        <i class="fa-solid fa-triangle-exclamation text-rose-400 mt-0.5 text-sm"></i>
+                        <span><strong>Warning:</strong> Your previous whitelist application was denied. You are allowed one resubmission. If this secondary application is rejected, you will receive an automatic <strong>14-day community ban</strong>. Please ensure your lore and background are fully detailed.</span>
+                    </div>
+                <% } else { %>
+                    <p>Please make sure you have read all rules regarding character backstories and minimum server requirements before sending your application.</p>
+                    <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800/80 text-xs text-slate-400 flex items-start gap-2.5">
+                        <i class="fa-solid fa-circle-info text-blue-400 mt-0.5"></i>
+                        <span>Incomplete or low-effort lore blocks will automatically be rejected by administrative review.</span>
+                    </div>
+                <% } %>
+    
+
+            </div>
+
+
+
+        </div>
+    </div>
+                           <%- include('partials/footer') %>
+
+    <!-- Modal Script Handler -->
+    <script>
+        function toggleModal(show) {
+            const modal = document.getElementById('appModal');
+            if (show) {
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+            } else {
+                modal.classList.add('opacity-0', 'pointer-events-none');
+            }
+        }
+
+        // Close modal when clicking outside the container box
+        window.addEventListener('click', (e) => {
+            const modal = document.getElementById('appModal');
+            if (e.target === modal) {
+                toggleModal(false);
+            }
+        });
+    </script>
+
+</body>
+</html>

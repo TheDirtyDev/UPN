@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>United Patrol Network</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tailwind CSS CDN for modern styling & modals -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+
+    <!-- Navbar Header -->
+    <header
+        class="navbar flex items-center justify-between px-6 py-4 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-50">
+        <div class="logo flex items-center gap-2.5 text-lg font-bold tracking-wide text-white">
+            <i class="fa-solid fa-shield-halved text-blue-500 text-xl"></i>
+            <span>UPN <span class="text-blue-400 font-normal">//</span> FivePD</span>
+        </div>
+
+        <nav class="flex items-center gap-3">
+            <% if (user) { %>
+                <!-- Logged In View -->
+                <a href="/dashboard"
+                    class="flex items-center gap-2 px-3.5 py-2 text-sm font-medium text-slate-200 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 rounded-lg transition shadow-sm">
+                    <i class="fa-solid fa-gauge-high text-blue-400"></i> Dashboard
+                </a>
+
+                <!-- Notification Center Bell & Dropdown Toggle -->
+                <div class="relative">
+                    <button onclick="toggleNotificationDropdown()" id="notificationBellBtn"
+                        class="relative flex items-center justify-center w-10 h-10 text-slate-300 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 rounded-lg transition shadow-sm cursor-pointer">
+                        <i class="fa-solid fa-bell text-sm"></i>
+                        <!-- Unread Count Badge (Dynamic) -->
+                        <span id="notificationBadge"
+                            class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full border border-slate-900 hidden">0</span>
+                    </button>
+
+                    <!-- Dropdown Content Box -->
+                    <div id="notificationDropdown"
+                        class="absolute right-0 mt-2 w-80 sm:w-96 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden hidden z-50 transform origin-top-right transition-all duration-200">
+                        <div class="flex items-center justify-between px-4 py-3 bg-slate-850 border-b border-slate-800">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-bell text-blue-400 text-sm"></i>
+                                <h4 class="text-xs font-bold uppercase tracking-wider text-white">Notifications</h4>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button onclick="markAllNotificationsRead()"
+                                    class="text-[11px] text-blue-400 hover:text-blue-300 font-medium transition cursor-pointer">Mark all read</button>
+                                <span class="text-slate-700">|</span>
+                                <button onclick="clearAllNotifications()"
+                                    class="text-[11px] text-slate-400 hover:text-red-400 transition cursor-pointer">Clear</button>
+                            </div>
+                        </div>
+
+                        <!-- Notification List Container -->
+                        <div id="notificationList" class="max-h-80 overflow-y-auto divide-y divide-slate-800/60">
+                            <!-- Items populated dynamically via client script -->
+                            <div id="noNotificationsMsg" class="py-8 text-center text-xs text-slate-500">
+                                <i class="fa-regular fa-bell-slash text-2xl mb-2 block text-slate-600"></i>
+                                No new notifications right now.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admin Button: Checks your Discord ID directly against admin array -->
+                <% const ADMIN_DISCORD_IDS=['895054825316839424', '698645469907124346' ]; 
+                    const isUserAdmin=ADMIN_DISCORD_IDS.includes(user.id); 
+                %>
+
+                <% if (isUserAdmin) { %>
+                    <a href="/admin"
+                        class="flex items-center gap-2 px-3.5 py-2 text-sm font-semibold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-lg transition shadow-sm">
+                        <i class="fa-solid fa-user-shield"></i> Admin Panel
+                    </a>
+                <% } %>
+
+                <!-- Sleek Logout Trigger Button with Custom Modal Popup -->
+                <button onclick="openLogoutModal()"
+                    class="flex items-center gap-2 px-3.5 py-2 text-sm font-medium text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg transition shadow-sm cursor-pointer">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+                </button>
+
+            <% } else { %>
+                <!-- Logged Out View -->
+                <a href="/"
+                    class="flex items-center gap-2 px-3.5 py-2 text-sm font-medium text-slate-200 bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 rounded-lg transition shadow-sm">
+                    <i class="fa-solid fa-house text-cyan-400"></i> Home
+                </a>
+                <a href="/auth/discord"
+                    class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#5865F2] hover:bg-[#4752C4] rounded-lg transition shadow-md shadow-indigo-500/20">
+                    <i class="fa-brands fa-discord text-base"></i> Login with Discord
+                </a>
+            <% } %>
+        </nav>
+    </header>
+
+    <!-- Guild Membership Check Notification Banner (Bottom-Right Floating) -->
+    <% if (user) { %>
+        <div id="guildWarningBanner"
+            class="fixed bottom-5 right-5 z-50 max-w-sm w-full bg-amber-950/90 border border-amber-500/40 backdrop-blur-md rounded-2xl p-4 shadow-2xl shadow-amber-950/50 translate-y-24 opacity-0 transition-all duration-300 pointer-events-none">
+            <div class="flex items-start gap-3">
+                <div
+                    class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 flex-shrink-0 mt-0.5">
+                    <i class="fa-brands fa-discord text-xl"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between mb-1">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-amber-400">Server Verification</h4>
+                        <button onclick="dismissGuildBanner()"
+                            class="text-slate-400 hover:text-white transition cursor-pointer p-1">
+                            <i class="fa-solid fa-xmark text-sm"></i>
+                        </button>
+                    </div>
+                    <p class="text-xs text-amber-100/90 leading-relaxed mb-3">
+                        We don't detect you in the <span class="font-semibold text-amber-400">United Patrol Network</span> Discord server. Please join the server if you wish to apply for the whitelist.
+                    </p>
+                    <div class="flex items-center gap-2">
+                        <a href="https://discord.gg/Gu9FshfnkT" target="_blank"
+                            class="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-white bg-[#5865F2] hover:bg-[#4752C4] rounded-lg transition shadow-md shadow-indigo-500/25">
+                            <i class="fa-brands fa-discord"></i> Join Server
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Floating Sidebar Pill to Reopen Notification if Closed -->
+        <button id="reopenGuildBtn" onclick="reopenGuildBanner()"
+            class="fixed right-0 top-1/2 -translate-y-1/2 z-40 bg-amber-500/10 hover:bg-amber-500/20 border-y border-l border-amber-500/30 text-amber-400 px-2.5 py-3 rounded-l-xl shadow-lg transition-all translate-x-full opacity-0 pointer-events-none cursor-pointer flex flex-col items-center gap-1.5"
+            title="Server Check Warning">
+            <i class="fa-brands fa-discord text-base"></i>
+            <span class="text-[10px] font-bold uppercase tracking-tighter"
+                style="writing-mode: vertical-rl; text-orientation: mixed;">Not In Server</span>
+        </button>
+    <% } %>
+
+    <!-- Custom Logout Confirmation Modal -->
+    <div id="logoutModal"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl transform scale-95 transition-transform duration-300"
+            id="modalContent">
+            <div class="flex items-center gap-3 mb-4">
+                <div
+                    class="w-10 h-10 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 flex-shrink-0">
+                    <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-white">Confirm Logout</h3>
+                    <p class="text-xs text-slate-400">You are about to logout of the website. Are you sure?</p>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 mt-6">
+                <button onclick="closeLogoutModal()"
+                    class="px-4 py-2 text-xs font-semibold text-slate-300 bg-slate-800 hover:bg-slate-700 rounded-lg transition cursor-pointer">
+                    Cancel
+                </button>
+                <a href="/logout"
+                    class="px-4 py-2 text-xs font-semibold text-white bg-red-600 hover:bg-red-500 rounded-lg transition shadow-lg shadow-red-600/20">
+                    Yes, Logout
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Center & App Logic Script -->
+    <script>
+        const modal = document.getElementById('logoutModal');
+        const modalContent = document.getElementById('modalContent');
+
+        function openLogoutModal() {
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modalContent.classList.remove('scale-95');
+                modalContent.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeLogoutModal() {
+            modal.classList.add('opacity-0');
+            modalContent.classList.remove('scale-100');
+            modalContent.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        // Close modal or notification dropdown when clicking outside
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeLogoutModal();
+            }
+            const dropdown = document.getElementById('notificationDropdown');
+            const bellBtn = document.getElementById('notificationBellBtn');
+            if (dropdown && !dropdown.classList.contains('hidden')) {
+                if (!dropdown.contains(e.target) && !bellBtn.contains(e.target)) {
+                    dropdown.classList.add('hidden');
+                }
+            }
+        });
+
+        // Notification Center Logic (LocalStorage Managed Mock System)
+        let sampleNotifications = [
+            { id: 1, title: 'Welcome to UPN!', message: 'Explore the dashboard and review server guidelines before filing an application.', time: 'Just now', read: false, type: 'info' },
+            { id: 2, title: 'Whitelist Queue Status', message: 'Your profile registration is saved. Complete requirements to request review.', time: '2h ago', read: false, type: 'warning' }
+        ];
+
+        function loadNotificationsFromStorage() {
+            const saved = localStorage.getItem('upn_notifications');
+            if (saved) {
+                try {
+                    sampleNotifications = JSON.parse(saved);
+                } catch (e) {
+                    console.error('Failed to parse notifications storage:', e);
+                }
+            }
+            renderNotifications();
+        }
+
+        function saveNotificationsToStorage() {
+            localStorage.setItem('upn_notifications', JSON.stringify(sampleNotifications));
+        }
+
+        function toggleNotificationDropdown() {
+            const dropdown = document.getElementById('notificationDropdown');
+            if (dropdown) {
+                dropdown.classList.toggle('hidden');
+            }
+        }
+
+        function renderNotifications() {
+            const listEl = document.getElementById('notificationList');
+            const badgeEl = document.getElementById('notificationBadge');
+            if (!listEl || !badgeEl) return;
+
+            const unreadCount = sampleNotifications.filter(n => !n.read).length;
+
+            if (unreadCount > 0) {
+                badgeEl.textContent = unreadCount;
+                badgeEl.classList.remove('hidden');
+            } else {
+                badgeEl.classList.add('hidden');
+            }
+
+            if (sampleNotifications.length === 0) {
+                listEl.innerHTML = `
+                    <div class="py-8 text-center text-xs text-slate-500">
+                        <i class="fa-regular fa-bell-slash text-2xl mb-2 block text-slate-600"></i>
+                        No new notifications right now.
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            sampleNotifications.forEach(n => {
+                let iconColor = 'text-blue-400 bg-blue-500/10 border-blue-500/20';
+                let iconClass = 'fa-circle-info';
+                if (n.type === 'warning') {
+                    iconColor = 'text-amber-400 bg-amber-500/10 border-amber-500/20';
+                    iconClass = 'fa-triangle-exclamation';
+                } else if (n.type === 'success') {
+                    iconColor = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
+                    iconClass = 'fa-circle-check';
+                }
+
+                html += `
+                    <div onclick="markSingleRead(${n.id})" class="p-3.5 hover:bg-slate-800/50 transition cursor-pointer flex items-start gap-3 relative ${n.read ? 'opacity-60' : 'bg-slate-850/40'}">
+                        <div class="w-8 h-8 rounded-lg border flex items-center justify-center flex-shrink-0 ${iconColor} mt-0.5">
+                            <i class="fa-solid ${iconClass} text-xs"></i>
+                        </div>
+                        <div class="flex-1 min-w-0 pr-4">
+                            <div class="flex items-center justify-between mb-0.5">
+                                <h5 class="text-xs font-semibold text-white truncate">${n.title}</h5>
+                                <span class="text-[10px] text-slate-500">${n.time}</span>
+                            </div>
+                            <p class="text-xs text-slate-300 leading-relaxed">${n.message}</p>
+                        </div>
+                        ${!n.read ? '<span class="absolute right-3.5 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-blue-500"></span>' : ''}
+                    </div>
+                `;
+            });
+            listEl.innerHTML = html;
+        }
+
+        function markSingleRead(id) {
+            const item = sampleNotifications.find(n => n.id === id);
+            if (item) {
+                item.read = true;
+                saveNotificationsToStorage();
+                renderNotifications();
+            }
+        }
+
+        function markAllNotificationsRead() {
+            sampleNotifications.forEach(n => n.read = true);
+            saveNotificationsToStorage();
+            renderNotifications();
+        }
+
+        function clearAllNotifications() {
+            sampleNotifications = [];
+            saveNotificationsToStorage();
+            renderNotifications();
+        }
+
+        // Play standard notification ding tone using Web Audio API
+        function playDingSound() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
+
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1046.50, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1567.98, ctx.currentTime + 0.15);
+
+                gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.6);
+
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc.start();
+                osc.stop(ctx.currentTime + 0.6);
+            } catch (err) {
+                console.warn('Audio context blocked or unavailable:', err);
+            }
+        }
+
+        // Trigger checks on page load
+        window.addEventListener('DOMContentLoaded', async () => {
+            loadNotificationsFromStorage();
+
+            const currentUserId = '<%= user ? user.id : "" %>';
+            if (!currentUserId) return;
+
+            try {
+                const response = await fetch('/api/check-guild-membership');
+                if (!response.ok) return;
+                const data = await response.json();
+
+                // If user is explicitly confirmed NOT to be in the guild via bot API check
+                if (data && data.inGuild === false) {
+                    playDingSound();
+                    const banner = document.getElementById('guildWarningBanner');
+                    if (banner) {
+                        banner.classList.remove('translate-y-24', 'opacity-0', 'pointer-events-none');
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to verify guild membership via bot:', err);
+            }
+        });
+
+        function dismissGuildBanner() {
+            const banner = document.getElementById('guildWarningBanner');
+            const reopenBtn = document.getElementById('reopenGuildBtn');
+            if (banner) {
+                banner.classList.add('translate-y-24', 'opacity-0', 'pointer-events-none');
+            }
+            if (reopenBtn) {
+                reopenBtn.classList.remove('translate-x-full', 'opacity-0', 'pointer-events-none');
+            }
+        }
+
+        function reopenGuildBanner() {
+            const banner = document.getElementById('guildWarningBanner');
+            const reopenBtn = document.getElementById('reopenGuildBtn');
+            if (banner) {
+                banner.classList.remove('translate-y-24', 'opacity-0', 'pointer-events-none');
+            }
+            if (reopenBtn) {
+                reopenBtn.classList.add('translate-x-full', 'opacity-0', 'pointer-events-none');
+            }
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,385 @@
+<%- include('partials/header') %>
+
+<style>
+    /* Scoped CSS for Home Page */
+    html {
+        scroll-behavior: smooth;
+    }
+
+    .main-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Background image with dark tactical gradient overlay */
+    .hero-section {
+        min-height: calc(100vh - 80px);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding: 40px 20px;
+        position: relative;
+        background: linear-gradient(rgba(11, 15, 25, 0.85), rgba(11, 15, 25, 0.92)), 
+                    url('https://img.gta5-mods.com/q75/images/immersive-loading-screens-ii-iikraze/1ada7a-loadingnewsscreenbg9.jpg') no-repeat center center fixed;
+        background-size: cover;
+        animation: fadeIn 1s ease-out;
+    }
+
+    /* Smooth Animations */
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .hero-badge {
+        background-color: rgba(16, 185, 129, 0.15);
+        color: #10b981;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        backdrop-filter: blur(4px);
+        animation: fadeIn 1.2s ease-out;
+    }
+
+    .hero-section h1 {
+        font-size: 3.5rem;
+        color: #ffffff;
+        margin-bottom: 12px;
+        letter-spacing: 0.5px;
+        text-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        animation: fadeIn 1.4s ease-out;
+    }
+
+    .tagline {
+        font-size: 1.15rem;
+        color: #9ca3af;
+        margin-bottom: 30px;
+        max-width: 620px;
+        line-height: 1.6;
+        animation: fadeIn 1.6s ease-out;
+    }
+
+    .hero-buttons {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        animation: fadeIn 1.8s ease-out;
+    }
+
+    .btn {
+        padding: 12px 26px;
+        border-radius: 8px;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.95rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    }
+
+    .btn:active {
+        transform: scale(0.98);
+    }
+
+    .btn-primary {
+        background-color: #2563eb;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: #1d4ed8;
+    }
+
+    .btn-secondary {
+        background-color: rgba(31, 41, 55, 0.8);
+        backdrop-filter: blur(4px);
+        color: white;
+        border: 1px solid #374151;
+    }
+
+    .btn-secondary:hover {
+        background-color: rgba(55, 65, 81, 0.9);
+        border-color: #4b5563;
+    }
+
+    /* Two-Column Info Section */
+    .info-section {
+        padding: 70px 8% 90px 8%;
+        background-color: #0b0f19;
+        border-top: 1px solid #1f2937;
+        position: relative;
+        z-index: 2;
+    }
+
+    .container-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 30px;
+        max-width: 1100px;
+        margin: 0 auto;
+    }
+
+    .info-column h2 {
+        color: #ffffff;
+        font-size: 1.4rem;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border-bottom: 1px solid #1f2937;
+        padding-bottom: 10px;
+    }
+
+    .info-column h2 i {
+        color: #3b82f6;
+    }
+
+    /* Compact Cards with Smooth Hover Transitions */
+    .compact-card {
+        background-color: #111827;
+        border: 1px solid #1f2937;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 15px;
+        transition: all 0.25s ease;
+    }
+
+    .compact-card:hover {
+        transform: translateY(-3px);
+        border-color: #374151;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    .compact-card.active-border {
+        border-color: #3b82f6;
+        background: linear-gradient(180deg, #111827 0%, #131d31 100%);
+    }
+
+    .card-header-flex {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+    }
+
+    .compact-card h3 {
+        color: #ffffff;
+        font-size: 1.05rem;
+    }
+
+    .compact-card p {
+        color: #9ca3af;
+        font-size: 0.88rem;
+        line-height: 1.5;
+    }
+
+    /* Badges */
+    .badge {
+        font-size: 0.7rem;
+        font-weight: bold;
+        padding: 3px 8px;
+        border-radius: 4px;
+        text-transform: uppercase;
+    }
+
+    .badge.public { background-color: rgba(16, 185, 129, 0.15); color: #10b981; }
+    .badge.whitelisted { background-color: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+    .badge.private { background-color: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+
+    /* Feature List */
+    .feature-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+
+    .feature-item {
+        background-color: #111827;
+        border: 1px solid #1f2937;
+        padding: 16px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        transition: all 0.25s ease;
+    }
+
+    .feature-item:hover {
+        transform: translateY(-3px);
+        border-color: #3b82f6;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    .feature-item i {
+        font-size: 1.2rem;
+        color: #3b82f6;
+        min-width: 24px;
+        text-align: center;
+    }
+
+    .feature-item h4 {
+        color: #ffffff;
+        font-size: 0.95rem;
+        margin-bottom: 2px;
+    }
+
+    .feature-item p {
+        color: #9ca3af;
+        font-size: 0.82rem;
+    }
+
+    /* Future Box */
+    .future-box {
+        background-color: #0e1626;
+        border: 1px dashed #374151;
+        padding: 18px;
+        border-radius: 10px;
+        transition: all 0.25s ease;
+    }
+
+    .future-box:hover {
+        border-color: #f59e0b;
+    }
+
+    .future-box h4 {
+        color: #e2e8f0;
+        font-size: 0.9rem;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .future-box h4 i {
+        color: #f59e0b;
+    }
+
+    .future-box p {
+        color: #9ca3af;
+        font-size: 0.84rem;
+        line-height: 1.5;
+    }
+</style>
+
+<main class="main-container">
+    <!-- Compact Hero Section with Background and Animations -->
+    <section class="hero-section">
+        <div class="hero-badge">
+            <i class="fa-solid fa-check-circle"></i> Applications: Open
+        </div>
+        <h1>United Patrol Network</h1>
+        <p class="tagline">A private FiveM community built around immersive patrols, content creation, and a relaxed environment with friends and staff.</p>
+        
+        <div class="hero-buttons">
+            <% if (!user) { %>
+                <a href="/auth/discord" class="btn btn-primary">
+                    <i class="fa-brands fa-discord"></i> Login to Apply
+                </a>
+            <% } else { %>
+                <a href="/dashboard" class="btn btn-primary">
+                    <i class="fa-solid fa-gauge-high"></i> Go to Dashboard
+                </a>
+            <% } %>
+            
+            <a href="#sessions" class="btn btn-secondary">
+                Learn More <i class="fa-solid fa-arrow-down"></i>
+            </a>
+        </div>
+    </section>
+
+    <!-- Compact Grid Section (Sessions + What We Offer side-by-side) -->
+    <section id="sessions" class="info-section">
+        <div class="container-grid">
+            
+            <!-- Left Column: Session Types -->
+            <div class="info-column">
+                <h2><i class="fa-solid fa-calendar-days"></i> Session Types</h2>
+                
+                <div class="compact-card">
+                    <div class="card-header-flex">
+                        <h3>Public Nights</h3>
+                        <span class="badge public">Open</span>
+                    </div>
+                    <p>Open to everyone to meet the community and enjoy patrols together.</p>
+                </div>
+
+                <div class="compact-card active-border">
+                    <div class="card-header-flex">
+                        <h3>Whitelisted Sessions</h3>
+                        <span class="badge whitelisted">Core</span>
+                    </div>
+                    <p>Reserved for approved members and staff for regular, controlled roleplay.</p>
+                </div>
+
+                <div class="compact-card">
+                    <div class="card-header-flex">
+                        <h3>Private Sessions</h3>
+                        <span class="badge private">Staff / Dev</span>
+                    </div>
+                    <p>For ownership, management testing, content creation, and streams.</p>
+                </div>
+            </div>
+
+            <!-- Right Column: What We Offer & Future -->
+            <div class="info-column">
+                <h2><i class="fa-solid fa-star"></i> What We Offer</h2>
+                
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <i class="fa-solid fa-gamepad"></i>
+                        <div>
+                            <h4>FivePD Gameplay</h4>
+                            <p>Structured law enforcement roleplay with active scripts.</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fa-solid fa-video"></i>
+                        <div>
+                            <h4>Content & Streaming</h4>
+                            <p>A welcoming ecosystem to support creators and streamers.</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fa-solid fa-code-branch"></i>
+                        <div>
+                            <h4>Community-Driven</h4>
+                            <p>Growing naturally while maintaining our close-knit vibe.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="future-box">
+                    <h4><i class="fa-solid fa-compass"></i> Looking Forward</h4>
+                    <p>UPN remains primarily private while we build. As we grow, we will expand public hours and introduce new events naturally.</p>
+                </div>
+            </div>
+
+        </div>
+    </section>
+</main>
+
+<%- include('partials/footer') %>
