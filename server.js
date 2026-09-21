@@ -70,23 +70,55 @@ app.use(async (req, res, next) => {
     next();
 });
 
-// Initialize Discord Bot Client
-const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMembers
-    ]
-});
+// --- LAZY SERVERLESS DISCORD CLIENT ---
+let discordClient = null;
 
-// --- AUTOMATED CLEANUP WORKER (Safe for Serverless / Local) ---
+function getDiscordClient() {
+    if (!discordClient && process.env.DISCORD_BOT_TOKEN) {
+        discordClient = new Client({
+            intents: [
+                GatewayIntentBits.Guilds,
+                GatewayIntentBits.GuildMembers
+            ]
+        });
+
+        discordClient.once('ready', () => {
+            console.log(`[Discord Bot] Logged in as ${discordClient.user.tag}!`);
+            const TARGET_GUILD_ID = process.env.DISCORD_GUILD_ID;
+            if (TARGET_GUILD_ID && process.env.NODE_ENV !== 'production') {
+                const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+                setTimeout(() => cleanupInactiveUsers(TARGET_GUILD_ID), 10000);
+                setInterval(() => cleanupInactiveUsers(TARGET_GUILD_ID), TWENTY_FOUR_HOURS);
+            }
+        });
+
+        discordClient.login(process.env.DISCORD_BOT_TOKEN).catch(e => {
+            console.error('[Discord Bot Login Error]:', e.message);
+            discordClient = null;
+        });
+    }
+    return discordClient;
+}
+
+// Trigger lazy init safely in background if token exists
+if (process.env.DISCORD_BOT_TOKEN) {
+    getDiscordClient();
+} else {
+    console.log('[Discord Bot] Warning: DISCORD_BOT_TOKEN missing from .env.');
+}
+
+// --- AUTOMATED CLEANUP WORKER ---
 async function cleanupInactiveUsers(guildId) {
     if (!guildId) return;
     try {
         await connectDB();
+        const clientInstance = getDiscordClient();
+        if (!clientInstance) return;
+
         console.log('[Cleanup Worker] Starting inactive/departed user check...');
         const users = await User.find({});
 
-        const guild = await client.guilds.fetch(guildId).catch(() => null);
+        const guild = await clientInstance.guilds.fetch(guildId).catch(() => null);
         if (!guild) {
             console.log('[Cleanup Worker] Error: Guild could not be fetched.');
             return;
@@ -123,23 +155,6 @@ async function cleanupInactiveUsers(guildId) {
     }
 }
 
-client.once('ready', () => {
-    console.log(`[Discord Bot] Logged in as ${client.user.tag}!`);
-    const TARGET_GUILD_ID = process.env.DISCORD_GUILD_ID;
-    if (TARGET_GUILD_ID && process.env.NODE_ENV !== 'production') {
-        // Only run interval loops in local dev runtime; Vercel serverless handles cron separately
-        const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
-        setTimeout(() => cleanupInactiveUsers(TARGET_GUILD_ID), 10000);
-        setInterval(() => cleanupInactiveUsers(TARGET_GUILD_ID), TWENTY_FOUR_HOURS);
-    }
-});
-
-if (process.env.DISCORD_BOT_TOKEN) {
-    client.login(process.env.DISCORD_BOT_TOKEN).catch(e => console.error('[Discord Bot Login Error]:', e.message));
-} else {
-    console.log('[Discord Bot] Warning: DISCORD_BOT_TOKEN missing from .env.');
-}
-
 // --- MIDDLEWARE & HELPERS ---
 function isAdmin(req, res, next) {
     if (!req.session || !req.session.user) return res.redirect('/');
@@ -168,7 +183,9 @@ const LOG_CHANNEL_ID = '1547698170480431205';
 
 async function sendImportantLog(title, description, color = 0x3b82f6, fields = []) {
     try {
-        const channel = await client.channels.fetch(LOG_CHANNEL_ID).catch(() => null);
+        const clientInstance = getDiscordClient();
+        if (!clientInstance || !clientInstance.isReady()) return;
+        const channel = await clientInstance.channels.fetch(LOG_CHANNEL_ID).catch(() => null);
         if (!channel) return;
 
         const embed = new EmbedBuilder()
@@ -296,57 +313,60 @@ app.post('/admin/user/:id', isAdmin, async (req, res) => {
         );
 
         try {
-            const discordUser = await client.users.fetch(req.params.id);
+            const clientInstance = getDiscordClient();
+            if (clientInstance) {
+                const discordUser = await clientInstance.users.fetch(req.params.id);
 
-            if (discordUser) {
-                let targetEmbed;
+                if (discordUser) {
+                    let targetEmbed;
 
-                if (statusChanged) {
-                    let embedColor = 0xf59e0b;
-                    let statusDescription = `Your application is currently set to **Pending Review**.`;
+                    if (statusChanged) {
+                        let embedColor = 0xf59e0b;
+                        let statusDescription = `Your application is currently set to **Pending Review**.`;
 
-                    if (whitelistStatus === 'Approved') {
-                        embedColor = 0x10b981;
-                        statusDescription = `🎉 **Congratulations!** You have been accepted into the community.\n\n` +
-                            `• **Department:** ${department || 'Unassigned'}\n` +
-                            `• **Callsign:** ${callsign || 'Unassigned'}`;
-                    } else if (whitelistStatus === 'Denied') {
-                        embedColor = 0xef4444;
-                        statusDescription = `❌ Unfortunately, your application was denied at this time. Feel free to contact staff for more details.`;
+                        if (whitelistStatus === 'Approved') {
+                            embedColor = 0x10b981;
+                            statusDescription = `🎉 **Congratulations!** You have been accepted into the community.\n\n` +
+                                `• **Department:** ${department || 'Unassigned'}\n` +
+                                `• **Callsign:** ${callsign || 'Unassigned'}`;
+                        } else if (whitelistStatus === 'Denied') {
+                            embedColor = 0xef4444;
+                            statusDescription = `❌ Unfortunately, your application was denied at this time. Feel free to contact staff for more details.`;
+                        }
+
+                        targetEmbed = new EmbedBuilder()
+                            .setColor(embedColor)
+                            .setTitle('📋 UPN LEADER HAS REVIEWED')
+                            .setDescription(`Hello **${discordUser.username}**, your application status has been reviewed and updated by a community leader.`)
+                            .addFields(
+                                { name: 'New Application Status', value: `**${whitelistStatus}**`, inline: true },
+                                { name: 'Active Strikes', value: `**${updatedStrikes}**`, inline: true },
+                                { name: '\u200b', value: '\u200b', inline: false },
+                                { name: 'Assignment Details', value: statusDescription },
+                                { name: 'Reviewed By', value: `*${adminUser ? adminUser.username : 'Server Administrator'}*`, inline: false }
+                            );
+                    } else {
+                        targetEmbed = new EmbedBuilder()
+                            .setColor(0x3b82f6)
+                            .setTitle('🛡️ UPN PROFILE UPDATED')
+                            .setDescription(`Hello **${discordUser.username}**, your member profile details have been updated by a community leader.`)
+                            .addFields(
+                                { name: 'Department', value: `**${department || 'Unassigned'}**`, inline: true },
+                                { name: 'Callsign', value: `**${callsign || 'Unassigned'}**`, inline: true },
+                                { name: 'Active Strikes', value: `**${updatedStrikes}**`, inline: true },
+                                { name: 'Updated By', value: `*${adminUser ? adminUser.username : 'Server Administrator'}*`, inline: false }
+                            );
                     }
 
-                    targetEmbed = new EmbedBuilder()
-                        .setColor(embedColor)
-                        .setTitle('📋 UPN LEADER HAS REVIEWED')
-                        .setDescription(`Hello **${discordUser.username}**, your application status has been reviewed and updated by a community leader.`)
-                        .addFields(
-                            { name: 'New Application Status', value: `**${whitelistStatus}**`, inline: true },
-                            { name: 'Active Strikes', value: `**${updatedStrikes}**`, inline: true },
-                            { name: '\u200b', value: '\u200b', inline: false },
-                            { name: 'Assignment Details', value: statusDescription },
-                            { name: 'Reviewed By', value: `*${adminUser ? adminUser.username : 'Server Administrator'}*`, inline: false }
-                        );
-                } else {
-                    targetEmbed = new EmbedBuilder()
-                        .setColor(0x3b82f6)
-                        .setTitle('🛡️ UPN PROFILE UPDATED')
-                        .setDescription(`Hello **${discordUser.username}**, your member profile details have been updated by a community leader.`)
-                        .addFields(
-                            { name: 'Department', value: `**${department || 'Unassigned'}**`, inline: true },
-                            { name: 'Callsign', value: `**${callsign || 'Unassigned'}**`, inline: true },
-                            { name: 'Active Strikes', value: `**${updatedStrikes}**`, inline: true },
-                            { name: 'Updated By', value: `*${adminUser ? adminUser.username : 'Server Administrator'}*`, inline: false }
-                        );
+                    targetEmbed
+                        .setTimestamp()
+                        .setFooter({
+                            text: 'UPN Management & Security System',
+                            iconURL: adminUser ? `https://cdn.discordapp.com/avatars/${adminUser.id}/${adminUser.avatar}.png` : null
+                        });
+
+                    await discordUser.send({ embeds: [targetEmbed] });
                 }
-
-                targetEmbed
-                    .setTimestamp()
-                    .setFooter({
-                        text: 'UPN Management & Security System',
-                        iconURL: adminUser ? `https://cdn.discordapp.com/avatars/${adminUser.id}/${adminUser.avatar}.png` : null
-                    });
-
-                await discordUser.send({ embeds: [targetEmbed] });
             }
         } catch (dmErr) {
             console.log(`[Discord DM] Could not send message to user ${req.params.id}:`, dmErr.message);
