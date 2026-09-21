@@ -12,6 +12,9 @@ const Notification = require('./models/Notifications');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust proxy if behind Vercel/reverse proxy (critical for secure cookies)
+app.set('trust proxy', 1);
+
 // 2. VIEW ENGINE & STATIC ASSETS
 app.set('view engine', 'ejs');
 app.use(express.static(path.join(__dirname, 'public')));
@@ -25,20 +28,47 @@ app.use(session({
     saveUninitialized: false,
     cookie: {
         secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000 // 1 week session limit
     }
 }));
 
-let isConnected = false;
-async function ensureDB() {
-    if (mongoose.connection.readyState === 1) return;
-    await mongoose.connect(process.env.MONGO_URI);
+// --- VERCEL-SAFE MONGODB SINGLETON CONNECTION ---
+let cachedMongoose = global.mongooseConn;
+if (!cachedMongoose) {
+    cachedMongoose = global.mongooseConn = { conn: null, promise: null };
 }
 
-// Connect to MongoDB Atlas
-mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('[MongoDB] Connected to MongoDB Atlas successfully!'))
-    .catch((err) => console.error('[MongoDB] Connection error:', err));
+async function connectDB() {
+    if (cachedMongoose.conn) return cachedMongoose.conn;
+    if (!cachedMongoose.promise) {
+        cachedMongoose.promise = mongoose.connect(process.env.MONGO_URI, {
+            bufferCommands: false,
+            serverSelectionTimeoutMS: 5000,
+        }).then((m) => {
+            console.log('[MongoDB] Connected to MongoDB Atlas successfully!');
+            return m;
+        });
+    }
+    try {
+        cachedMongoose.conn = await cachedMongoose.promise;
+    } catch (err) {
+        cachedMongoose.promise = null;
+        console.error('[MongoDB] Connection error:', err.message);
+        throw err;
+    }
+    return cachedMongoose.conn;
+}
+
+// Ensure database connection middleware for routes that need DB
+app.use(async (req, res, next) => {
+    try {
+        await connectDB();
+    } catch (e) {
+        // Non-blocking for static assets, or let route handle error
+    }
+    next();
+});
 
 // Initialize Discord Bot Client
 const client = new Client({
@@ -48,10 +78,11 @@ const client = new Client({
     ]
 });
 
-// --- AUTOMATED CLEANUP WORKER ---
+// --- AUTOMATED CLEANUP WORKER (Safe for Serverless / Local) ---
 async function cleanupInactiveUsers(guildId) {
     if (!guildId) return;
     try {
+        await connectDB();
         console.log('[Cleanup Worker] Starting inactive/departed user check...');
         const users = await User.find({});
 
@@ -82,31 +113,29 @@ async function cleanupInactiveUsers(guildId) {
             if (shouldDelete) {
                 await User.deleteOne({ id: user.id });
                 deletedCount++;
-                console.log(`[Cleanup Worker] Removed user ${user.username} (${user.id}): ${reason}`);
+                console.log(`[Cleanup Worker] Removed user ${user.username} (${user.id}):${reason}`);
             }
         }
 
         console.log(`[Cleanup Worker] Finished. Removed ${deletedCount} user(s).`);
     } catch (err) {
-        console.error('[Cleanup Worker] Error during user cleanup routine:', err);
+        console.error('[Cleanup Worker] Error during user cleanup routine:', err.message);
     }
 }
 
 client.once('ready', () => {
     console.log(`[Discord Bot] Logged in as ${client.user.tag}!`);
-
     const TARGET_GUILD_ID = process.env.DISCORD_GUILD_ID;
-    if (TARGET_GUILD_ID) {
+    if (TARGET_GUILD_ID && process.env.NODE_ENV !== 'production') {
+        // Only run interval loops in local dev runtime; Vercel serverless handles cron separately
         const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
         setTimeout(() => cleanupInactiveUsers(TARGET_GUILD_ID), 10000);
         setInterval(() => cleanupInactiveUsers(TARGET_GUILD_ID), TWENTY_FOUR_HOURS);
-    } else {
-        console.log('[Cleanup Worker] Warning: DISCORD_GUILD_ID is missing from .env. Automatic cleanup is disabled.');
     }
 });
 
 if (process.env.DISCORD_BOT_TOKEN) {
-    client.login(process.env.DISCORD_BOT_TOKEN);
+    client.login(process.env.DISCORD_BOT_TOKEN).catch(e => console.error('[Discord Bot Login Error]:', e.message));
 } else {
     console.log('[Discord Bot] Warning: DISCORD_BOT_TOKEN missing from .env.');
 }
@@ -127,10 +156,10 @@ function isAdmin(req, res, next) {
     res.redirect('/dashboard');
 }
 
-// Automatically update user's lastActive timestamp on requests if logged in
-app.use(async (req, res, next) => {
-    if (req.session && req.session.user) {
-        User.updateOne({ id: req.session.user.id }, { $set: { lastActive: new Date() } }).catch(() => { });
+// Automatically update user's lastActive timestamp safely
+app.use((req, res, next) => {
+    if (req.session && req.session.user && mongoose.connection.readyState === 1) {
+        User.updateOne({ id: req.session.user.id }, { $set: { lastActive: new Date() } }).catch(() => {});
     }
     next();
 });
@@ -250,7 +279,7 @@ app.post('/admin/user/:id', isAdmin, async (req, res) => {
                     strikes: updatedStrikes
                 }
             },
-            { new: true }
+            { returnDocument: 'after' }
         );
 
         const adminUser = req.session.user;
@@ -262,7 +291,7 @@ app.post('/admin/user/:id', isAdmin, async (req, res) => {
             [
                 { name: 'Target User ID', value: `\`${req.params.id}\``, inline: true },
                 { name: 'New Status', value: `\`${whitelistStatus}\``, inline: true },
-                { name: 'Department / Callsign', value: `${department || 'Unassigned'} / ${callsign || 'Unassigned'}`, inline: false }
+                { name: 'Department / Callsign', value: `${department \vert{}\vert{} 'Unassigned'} /${callsign || 'Unassigned'}`, inline: false }
             ]
         );
 
@@ -379,10 +408,10 @@ app.post('/admin/database/:modelName/delete/:id', isAdmin, async (req, res) => {
         }
 
         if (!deleted) {
-            await model.deleteOne({ _id: id }).catch(() => { });
+            await model.deleteOne({ _id: id }).catch(() => {});
         }
 
-        console.log(`[Admin DB] Deleted record ${id} from model ${modelName} by ${req.session.user.username}`);
+        console.log(`[Admin DB] Deleted record ${id} from model ${modelName} by${req.session.user.username}`);
         res.redirect('/admin-database');
     } catch (err) {
         console.error("Error deleting record:", err);
@@ -397,7 +426,7 @@ app.post('/admin/database/:modelName/clear', isAdmin, async (req, res) => {
         const model = mongoose.model(modelName);
         await model.deleteMany({});
 
-        console.log(`[Admin DB] WARNING: Collection ${modelName} was completely wiped by ${req.session.user.username}`);
+        console.log(`[Admin DB] WARNING: Collection ${modelName} was completely wiped by${req.session.user.username}`);
         res.redirect('/admin-database');
     } catch (err) {
         console.error("Error clearing collection:", err);
@@ -411,14 +440,13 @@ app.get('/auth/discord', (req, res) => {
     res.redirect(discordAuthUrl);
 });
 
-
-// Discord Callback & Token Exchange
+// Discord Callback & Token Exchange (Guaranteed Connection & Return Document)
 app.get('/auth/discord/callback', async (req, res) => {
     const code = req.query.code;
     if (!code) return res.redirect('/');
 
     try {
-        await ensureDB(); // Use reusable connection check instead of raw connect every request
+        await connectDB();
 
         const tokenResponse = await axios.post('https://discord.com/api/oauth2/token', new URLSearchParams({
             client_id: process.env.DISCORD_CLIENT_ID,
@@ -459,9 +487,11 @@ app.get('/auth/discord/callback', async (req, res) => {
         );
 
         req.session.user = discordUser;
-        res.redirect('/dashboard');
+        req.session.save(() => {
+            res.redirect('/dashboard');
+        });
     } catch (error) {
-        console.error('Discord Auth Error:', error.response?.data || error.message);
+        console.error('Discord Auth Fatal Error:', error.response?.data || error.message);
         res.redirect('/');
     }
 });
@@ -526,7 +556,7 @@ app.post('/apply', async (req, res) => {
         await User.findOneAndUpdate(
             { id: req.session.user.id },
             { $set: updateData },
-            { upsert: true, new: true }
+            { upsert: true, returnDocument: 'after' }
         );
 
         sendImportantLog(
@@ -564,7 +594,7 @@ app.get('/admin/user/:id/pdf', isAdmin, async (req, res) => {
     }
 });
 
-// POST /admin/send-notification (Fixed Middleware & Functional DB push)
+// POST /admin/send-notification
 app.post('/admin/send-notification', isAdmin, async (req, res) => {
     try {
         const { sendTo, recipientId, notificationType, title, description } = req.body;
@@ -572,8 +602,8 @@ app.post('/admin/send-notification', isAdmin, async (req, res) => {
         const newNotification = new Notification({
             type: notificationType || 'info',
             title: title,
-            message: description || title, // Map description to message if required by schema
-            createdBy: req.session.user ? req.session.user.username : 'System Admin', // Pass the admin name/ID
+            message: description || title,
+            createdBy: req.session.user ? req.session.user.username : 'System Admin',
             date: new Date(),
             read: false
         });
@@ -683,6 +713,11 @@ app.get('/logout', (req, res) => {
     });
 });
 
-app.listen(PORT, () => {
-    console.log(`[UPN Server] Running on http://localhost:${PORT}`);
-});
+// Server / Vercel Export Setup
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+    app.listen(PORT, () => {
+        console.log(`[UPN Server] Running locally on http://localhost:${PORT}`);
+    });
+}
+
+module.exports = app;
