@@ -174,7 +174,7 @@ function isAdmin(req, res, next) {
 // Automatically update user's lastActive timestamp safely
 app.use((req, res, next) => {
     if (req.session && req.session.user && mongoose.connection.readyState === 1) {
-        User.updateOne({ id: req.session.user.id }, { $set: { lastActive: new Date() } }).catch(() => {});
+        User.updateOne({ id: req.session.user.id }, { $set: { lastActive: new Date() } }).catch(() => { });
     }
     next();
 });
@@ -308,8 +308,7 @@ app.post('/admin/user/:id', isAdmin, async (req, res) => {
             [
                 { name: 'Target User ID', value: `\`${req.params.id}\``, inline: true },
                 { name: 'New Status', value: `\`${whitelistStatus}\``, inline: true },
-                { name: 'Department / Callsign', value: `${department \vert{}\vert{} 'Unassigned'} /${callsign || 'Unassigned'}`, inline: false }
-            ]
+                { name: 'Department / Callsign', value: `${department || 'Unassigned'} / ${callsign || 'Unassigned'}`, inline: false }]
         );
 
         try {
@@ -428,7 +427,7 @@ app.post('/admin/database/:modelName/delete/:id', isAdmin, async (req, res) => {
         }
 
         if (!deleted) {
-            await model.deleteOne({ _id: id }).catch(() => {});
+            await model.deleteOne({ _id: id }).catch(() => { });
         }
 
         console.log(`[Admin DB] Deleted record ${id} from model ${modelName} by${req.session.user.username}`);
