@@ -29,6 +29,12 @@ app.use(session({
     }
 }));
 
+let isConnected = false;
+async function ensureDB() {
+    if (mongoose.connection.readyState === 1) return;
+    await mongoose.connect(process.env.MONGO_URI);
+}
+
 // Connect to MongoDB Atlas
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('[MongoDB] Connected to MongoDB Atlas successfully!'))
@@ -405,13 +411,14 @@ app.get('/auth/discord', (req, res) => {
     res.redirect(discordAuthUrl);
 });
 
+
 // Discord Callback & Token Exchange
 app.get('/auth/discord/callback', async (req, res) => {
     const code = req.query.code;
     if (!code) return res.redirect('/');
 
     try {
-        await mongoose.connect(process.env.MONGO_URI)
+        await ensureDB(); // Use reusable connection check instead of raw connect every request
 
         const tokenResponse = await axios.post('https://discord.com/api/oauth2/token', new URLSearchParams({
             client_id: process.env.DISCORD_CLIENT_ID,
@@ -448,7 +455,7 @@ app.get('/auth/discord/callback', async (req, res) => {
                     submittedDate: currentDate
                 }
             },
-            { upsert: true, new: true }
+            { upsert: true, returnDocument: 'after' }
         );
 
         req.session.user = discordUser;
